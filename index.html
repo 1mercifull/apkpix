@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8"/>
+  <title>APK a R$ 5</title>
+  <meta name="viewport" content="width=device-width"/>
+  <style>
+    body{font-family:sans-serif;padding:15px;max-width:500px;margin:auto;background:#f2f2f2}
+    input,button{width:100%;padding:10px;margin:6px 0;font-size:16px}
+    #qrbox{text-align:center}
+    #qr{max-width:220px;border:10px solid #fff}
+    li{list-style:none;padding:8px;background:#fff;margin:6px 0;border-radius:4px}
+  </style>
+</head>
+<body>
+  <h2>Enviar APK</h2>
+  <form id="up">
+    <input type="file" name="apk" accept=".apk" required>
+    <button>1 – Fazer upload</button>
+  </form>
+
+  <div id="qrbox" hidden>
+    <h3>2 – Pague R$ 5,00 via Pix</h3>
+    <img id="qr"><br>
+    <input id="copia" readonly style="text-align:center">
+    <button id="copiar">Copiar código</button>
+    <p id="statusPix"></p>
+  </div>
+
+  <h2>3 – Baixar APKs (liberados)</h2>
+  <div id="lista"></div>
+
+<script>
+  // UPLOAD
+  up.onsubmit = async (e)=>{
+    e.preventDefault();
+    const fd = new FormData(up);
+    const r = await fetch('/api/upload',{method:'POST',body:fd});
+    const {id} = await r.json();
+    pedirPag(id);
+  };
+
+  // pedir QR
+  const pedirPag = async (id)=>{
+    qrbox.hidden=false;
+    const r = await fetch('/api/checkout',{method:'POST',body:JSON.stringify({id}),headers:{'Content-Type':'application/json'}});
+    const j = await r.json();
+    qr.src='data:image/png;base64,'+j.qr;
+    copia.value = j.copy;
+    // polling
+    const iv = setInterval(async ()=>{
+      const ck = await fetch('/api/status?id='+id).then(r=>r.json());
+      if (ck.pago) {
+        clearInterval(iv);
+        statusPix.textContent='✓ Pago! Download liberado.';
+        lista.innerHTML += `<li><a href="${ck.url}" download>${ck.nome} ▼</a></li>`;
+      }
+    },4000);
+  };
+
+  // copiar código
+  copiar.onclick = ()=>{
+    copia.select();
+    document.execCommand('copy');
+    copiar.textContent='Copiado!';
+  };
+
+  // lista geral
+  fetch('/api/list').then(r=>r.json()).then(arr=>{
+    lista.innerHTML = arr.map(o=>`<li><a href="${o.url}" download>${o.nome}</a></li>`).join('');
+  });
+</script>
+</body>
+</html>

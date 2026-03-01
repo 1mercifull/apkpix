@@ -1,0 +1,8 @@
+{
+  "name": "apk-pix",
+  "version": "1.0.0",
+  "dependencies": {
+    "formidable": "latest",
+    "uuid": "latest"
+  }
+}
